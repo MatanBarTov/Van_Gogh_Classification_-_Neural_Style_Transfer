@@ -1,103 +1,123 @@
 # Van Gogh Classification and Neural Style Transfer
 
-A deep learning project that combines transfer learning, generative modeling, hyperparameter optimization, and interpretability in a single end-to-end computer vision pipeline.
+This repository contains my final project for the Introduction to Deep Learning course (Tel Aviv University, 2025/2026).
 
-The project has two goals:
+The project combines **transfer learning, neural style transfer, hyperparameter optimization, and model interpretability** in one end-to-end computer vision pipeline. The goal was to classify Van Gogh paintings versus other Post-Impressionist works, and then use the trained classifiers to evaluate generated Van Gogh-style images.
 
-1. Classify whether a painting is by Vincent van Gogh or not
-2. Generate Van Gogh-style images using neural style transfer, then evaluate those outputs with trained classifiers
-
-This project was built to demonstrate practical deep learning skills relevant to Computer Vision and Deep Learning Engineer roles: model design, training, tuning, evaluation, benchmarking, and interpretation.
+* * *
 
 ## Project Overview
 
-The classification stage fine-tunes two pretrained CNNs, AlexNet and VGG-19, on a filtered Post-Impressionism subset of WikiArt. The style transfer stage implements a generic neural style transfer pipeline and uses a trained classifier as a quantitative "judge" of Van Gogh-like outputs.
+This project is divided into two connected parts:
 
-The project also includes:
+- **Part 1:** Fine-tune pretrained CNNs (**AlexNet** and **VGG-19**) to classify whether a painting was created by **Vincent van Gogh**
+- **Part 2:** Implement a generic **Neural Style Transfer** pipeline and generate Van Gogh-style outputs from new images
+- **Evaluation:** Use the trained classifiers as quantitative judges of how “Van Gogh-like” the generated images are
+- **Bonus:** Use **Grad-CAM** to understand which visual regions the classifiers relied on
 
-- Optuna hyperparameter search
-- Weights & Biases experiment tracking
-- CPU vs GPU benchmarking
-- Grad-CAM-based interpretability analysis
+This project was designed to demonstrate practical skills relevant to **Computer Vision** and **Deep Learning** roles: model training, hyperparameter search, evaluation, benchmarking, and interpretability.
 
-## Why This Project Matters
+* * *
 
-This repository is more than a course submission. It shows how I approach an applied computer vision problem end to end:
+## Methodology
 
-- Define a practical modeling objective
-- Compare multiple architectures instead of relying on a single model
-- Tune hyperparameters systematically
-- Analyze failure modes, not just final metrics
-- Connect discriminative and generative methods in one workflow
-- Use interpretability tools to understand what the model actually learned
+The project follows a full deep learning workflow:
 
-## Key Results
+1. **Dataset Preparation**
+   - Filtered a Post-Impressionism subset from WikiArt
+   - Built a binary target: **Van Gogh** vs **Not Van Gogh**
+   - Applied train / validation / test splitting with class balance preservation
 
-- **AlexNet:** AUC-ROC = **0.9739**, Precision = **0.9306**
-- **VGG-19:** Accuracy = **0.9473**, F1 = **0.8154**, Recall = **0.7513**
+2. **Transfer Learning**
+   - Fine-tuned **AlexNet** and **VGG-19** with ImageNet-pretrained weights
+   - Froze convolutional feature extractors and replaced the final classifier head
+   - Used a unified **224×224** preprocessing pipeline with ImageNet normalization
 
-In practice:
+3. **Data Augmentation**
+   - `RandomResizedCrop`
+   - `RandomHorizontalFlip`
+   - `ColorJitter`
 
-- **VGG-19** was stronger at recovering Van Gogh paintings
-- **AlexNet** was more conservative and more precise
+4. **Hyperparameter Optimization**
+   - Used **Optuna** to tune:
+     - learning rate
+     - batch size
+     - weight decay
+   - Logged all experiments with **Weights & Biases**
+   - Used different search strategies for AlexNet and VGG-19 based on runtime constraints
 
-In the neural style transfer comparison:
+5. **Neural Style Transfer**
+   - Implemented a generic style transfer function for both **AlexNet** and **VGG-19**
+   - Used **content loss + Gram-matrix style loss**
+   - Supported configurable content/style layers and style-layer weights
+   - Tuned style-transfer hyperparameters using a classifier-as-judge objective
 
-- **VGG-19-based NST** generally preserved image structure more coherently
+6. **Interpretability & Benchmarking**
+   - Applied **Grad-CAM** to inspect classifier attention
+   - Compared **CPU vs GPU** runtime to verify actual hardware usage
+
+* * *
+
+## Main Results
+
+- **AlexNet**
+  - AUC-ROC = **0.9739**
+  - Precision = **0.9306**
+
+- **VGG-19**
+  - Accuracy = **0.9473**
+  - F1-score = **0.8154**
+  - Recall = **0.7513**
+
+### Key takeaways
+
+- **VGG-19** was stronger at recovering Van Gogh paintings and achieved better recall / F1
+- **AlexNet** was more conservative and achieved higher precision
+- In style transfer, **VGG-19-based NST** generally preserved structure more coherently
 - **AlexNet-based NST** often produced stronger but noisier stylization
+- Grad-CAM analysis suggested that both models relied mainly on **local texture cues** such as:
+  - brushstroke-like patterns
+  - swirling structures
+  - edge density
+  - color-texture combinations
 
-Grad-CAM analysis further suggested that both classifiers relied mainly on local texture cues such as brushstrokes, swirling patterns, edge density, and color-texture combinations rather than object-level semantics.
 
-## Technical Highlights
-
-### 1. Transfer Learning for Fine-Grained Art Classification
-
-- Fine-tuned **AlexNet** and **VGG-19** with ImageNet-pretrained weights
-- Froze the convolutional feature extractor and replaced the final classifier layer for binary prediction
-- Used a unified **224×224** preprocessing pipeline
-- Applied **ImageNet normalization**
-- Used training augmentations including:
-  - `RandomResizedCrop`
-  - `RandomHorizontalFlip`
-  - `ColorJitter`
-
-### 2. Systematic Hyperparameter Optimization
-
-- Used **Optuna** to search over:
-  - learning rate
-  - weight decay
-  - batch size
-- Logged runs and learning curves with **Weights & Biases**
-- AlexNet tuning used **4-fold cross-validation**
-- VGG-19 tuning used a **train/validation split** due to runtime constraints
-
-### 3. Neural Style Transfer as an Optimization Problem
-
-- Implemented a generic style transfer function for both **AlexNet** and **VGG-19** backbones
-- Used **content loss + Gram-matrix style loss**
-- Supported configurable content/style layers and per-layer style weights
-- Normalized Gram matrices and style-layer weights for more stable optimization
-- Tuned style-transfer hyperparameters with Optuna using a classifier-as-judge objective
-
-### 4. Model Interpretation with Grad-CAM
-
-- Used Grad-CAM to visualize which image regions most influenced Van Gogh predictions
-- Compared true positives and false positives across AlexNet and VGG-19
-- Identified a texture-driven learned signature rather than a semantic one
-
-### 5. Hardware Benchmarking
-
-- Included a CPU vs GPU benchmark to verify actual GPU usage
-- Reported training on an **NVIDIA GeForce RTX 4090**
-- Measured a single epoch at:
-  - **204.739s on GPU**
-  - **215.475s on CPU**
-
-This relatively small speedup likely reflects preprocessing and data-loading bottlenecks rather than pure model compute.
+* * *
 
 ## Repository Structure
 
-```text
-.
-├── main_notebook.ipynb
-└── Project_Report.pdf
+- `main_notebook.ipynb`  
+  Full implementation, including data preparation, model training, Optuna tuning, style transfer, evaluation, benchmarking, and Grad-CAM analysis
+
+- `Project_Report.pdf`  
+  Full project report with methodology, experiments, results, visualizations, and discussion
+
+* * *
+
+## Technologies & Tools
+
+- **Python**
+- **PyTorch**
+- **torchvision**
+- **Optuna**
+- **Weights & Biases**
+- **Matplotlib**
+
+* * *
+
+## Files in This Repository
+
+- `main_notebook.ipynb`
+- `Project_Report.pdf`
+- `README.md`
+
+* * *
+
+## Authors
+
+- **Matan Bar Tov**
+- **Omri Yarkoni**
+
+* * *
+
+This project reflects my interest in building strong, technically grounded computer vision and deep learning systems, with emphasis on both **model performance** and **understanding what the model actually learned**.
